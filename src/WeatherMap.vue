@@ -12,6 +12,14 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.fullscreen';
 import 'leaflet.fullscreen/Control.FullScreen.css';
 
+// 设置默认图标路径
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: '/weather-map/images/marker-icon-2x.png',
+  iconUrl: '/weather-map/images/marker-icon.png',
+  shadowUrl: '/weather-map/images/marker-shadow.png',
+});
+
 const weatherData = ref([]);
 const map = ref(null);
 
