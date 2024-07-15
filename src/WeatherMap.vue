@@ -6,11 +6,11 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import L from "leaflet";
-import "leaflet.fullscreen";
 import { getWeatherData } from "./api";
-import "leaflet/dist/leaflet.css";
-import "leaflet.fullscreen/Control.FullScreen.css";
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet.fullscreen';
+import 'leaflet.fullscreen/Control.FullScreen.css';
 
 const weatherData = ref([]);
 const map = ref(null);
