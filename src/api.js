@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://api.chang180backend.com/weather.php';
+const API_URL = 'https://chang180backend.com/api/weather.php';
 
 export const getWeatherData = async () => {
   try {
