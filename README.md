@@ -1,6 +1,6 @@
 # Weather Map
 
-以 Vue 3、Leaflet 顯示台灣氣象觀測資料的地圖應用，後續將升級為以使用者位置為中心的個人化氣象網站。
+以 Vue 3、Leaflet 與原生 PHP API 建立的個人化氣象 Dashboard，提供最近測站觀測、三天預報與出門帶傘建議。
 
 - 部署方式：共享空間同站部署（前端 + 原生 PHP API）
 - 完整文件：[docs/README.md](docs/README.md)
@@ -34,4 +34,4 @@ npm run typecheck
 npm run build
 ```
 
-本機 PHP API 修改後，執行 `npm run sync-api` 同步到 Herd 用的 `public/api/`。API 合約請見 [docs/api.md](docs/api.md)。
+本機 PHP API 修改後，執行 `npm run sync-api` 同步到 Herd 用的 `public/api/`。API 合約請見 [docs/api.md](docs/api.md)，部署步驟請見 [docs/deployment.md](docs/deployment.md)。

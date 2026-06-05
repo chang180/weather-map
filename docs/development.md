@@ -52,8 +52,8 @@ http://localhost:3000/api/weather.php?lat=25.04&lon=121.52
 
 因此使用 `npm run dev` 前，請先確認已執行 `npm run sync-api`，且 Herd 的 `https://weather-map.test` 可正常回應 PHP API。
 
+地圖輔助區塊會使用 API 回傳的 `stations` 渲染全部測站點位；若調整 PHP API，請確認回應仍包含 `stations` 並至少有可用座標。
+
 ## 正式部署方式
 
 正式環境改為部署到共享空間（同站部署），前端以同源 `/api/weather.php` 取得資料，詳見 [部署文件](deployment.md)。
-
-<!-- TODO: Phase X 補齊 -->

@@ -27,10 +27,12 @@ useWeather()
       ├─ current + location + meta → CurrentWeatherCard
       ├─ current → MetricGrid
       ├─ forecast.days → ForecastPanel
-      └─ current + mapCenter → WeatherMap
+      └─ stations + mapCenter → WeatherMap
 ```
 
 前端只消費 `WeatherResponse`。帶傘建議的 `urgent` / `suggest` / `none` 由 PHP API 計算，前端 `src/utils/umbrellaAdvice.ts` 僅負責顯示文字、圖示與 CSS class。
+
+地圖輔助區塊使用 API 回傳的 `stations` 陣列渲染全部測站點位；地圖中心維持 `mapCenter`，也就是使用者定位或台灣中心 fallback。這讓地圖保留全台測站脈絡，但 Dashboard 的主要資訊仍以最近測站、三天預報與帶傘建議為主。
 
 ## API 與部署
 

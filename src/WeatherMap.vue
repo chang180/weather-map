@@ -32,6 +32,7 @@ L.Icon.Default.mergeOptions({
 
 const map = shallowRef<Map | null>(null);
 const markersLayer = shallowRef<LayerGroup | null>(null);
+const userLayer = shallowRef<LayerGroup | null>(null);
 
 const formatValue = (value: number | string | null, unit = ''): string => {
   if (value === null || value === '') {
@@ -59,6 +60,7 @@ const initMap = (): void => {
   }).addTo(map.value);
 
   markersLayer.value = L.layerGroup().addTo(map.value);
+  userLayer.value = L.layerGroup().addTo(map.value);
 };
 
 const renderMarker = (): void => {
@@ -70,16 +72,29 @@ const renderMarker = (): void => {
 
   map.value.setView([props.mapCenter.lat, props.mapCenter.lon], 12);
   markersLayer.value.clearLayers();
+  userLayer.value?.clearLayers();
 
-  const marker = L.marker([props.mapCenter.lat, props.mapCenter.lon]).addTo(markersLayer.value);
-  marker.bindPopup(`
-    <h3>${props.weather.current.stationName ?? '最近測站'}</h3>
-    <p>${props.weather.location.county}${props.weather.location.town}</p>
-    <p>氣溫：${formatValue(props.weather.current.temperature, ' °C')}</p>
-    <p>濕度：${formatValue(props.weather.current.humidity, ' %')}</p>
-    <p>風速：${formatValue(props.weather.current.windSpeed, ' m/s')}</p>
-    <p>天氣：${props.weather.current.weatherText ?? '無資料'}</p>
-  `);
+  const userMarker = L.marker([props.mapCenter.lat, props.mapCenter.lon], {
+    icon: L.divIcon({
+      className: 'user-location-marker',
+      html: '<span></span>',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    }),
+  }).addTo(userLayer.value ?? markersLayer.value);
+  userMarker.bindPopup('<h3>您的位置</h3>');
+
+  props.weather.stations.forEach((station) => {
+    const marker = L.marker([station.lat, station.lon]).addTo(markersLayer.value as LayerGroup);
+    marker.bindPopup(`
+      <h3>${station.stationName ?? '氣象測站'}</h3>
+      <p>${station.county ?? ''}${station.town ?? ''}</p>
+      <p>氣溫：${formatValue(station.temperature, ' °C')}</p>
+      <p>濕度：${formatValue(station.humidity, ' %')}</p>
+      <p>風速：${formatValue(station.windSpeed, ' m/s')}</p>
+      <p>天氣：${station.weatherText ?? '無資料'}</p>
+    `);
+  });
 };
 
 const invalidateMap = (): void => {
@@ -117,6 +132,23 @@ watch(
 #map {
   width: 100%;
   height: var(--size-map-height);
+}
+
+:deep(.user-location-marker) {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(31, 111, 235, 0.18);
+}
+
+:deep(.user-location-marker span) {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary), 0 6px 14px rgba(23, 78, 166, 0.35);
 }
 
 @media (min-width: 900px) {

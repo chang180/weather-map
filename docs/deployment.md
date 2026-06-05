@@ -33,8 +33,9 @@ npm run build
 
 正式站台需同時具備：
 
-- `public/`：前端靜態檔（`index.html`、`assets/`、`images/` 等）
-- `api/`：PHP API 原始碼（包含 `weather.php`、`bootstrap.php`、各 service）
+- 前端靜態檔：`public/index.html`、`public/assets/`、`public/images/` 等
+- API 目錄：根目錄 `api/` 內容，需可由 `/api/weather.php` 存取
+- API cache：`api/cache/` 需可由 PHP 寫入，且不得對外列目錄
 
 ## 本機 Herd API
 
@@ -52,6 +53,16 @@ curl -ks "https://weather-map.test/api/weather.php?lat=25.04&lon=121.52" | jq .
 
 `public/api/` 是本機同步產物，已列入 `.gitignore`。
 
+## 共享空間部署檢查清單
+
+- HTTPS 憑證已啟用；瀏覽器定位需要 HTTPS。
+- 伺服器已安全設定 `CWA_API_KEY`，或在不進版控的位置放置 `.env`。
+- 站台根目錄已對應到前端靜態檔；若主機不是直接服務 `public/`，需把 `public/` 內容搬到實際站台根目錄。
+- `/api/weather.php` 可直接存取，且同源回應 JSON。
+- `api/cache/` 目錄存在並可由 PHP 寫入。
+- `api/cache/`、`.env` 不應公開成可瀏覽清單。
+- 部署順序為先 API、後前端，以避免合約不同步。
+
 ## 驗收（正式站台）
 
 在正式站台（需 HTTPS 才能使用瀏覽器定位）確認 API 可用：
@@ -59,3 +70,9 @@ curl -ks "https://weather-map.test/api/weather.php?lat=25.04&lon=121.52" | jq .
 ```bash
 curl -ks "https://<你的網域>/api/weather.php?lat=25.04&lon=121.52" | jq .
 ```
+
+前端驗收：
+
+1. 開啟正式站台首頁。
+2. 允許定位或確認 fallback 可載入。
+3. 確認 Dashboard 顯示帶傘建議、即時觀測、三天預報與地圖。

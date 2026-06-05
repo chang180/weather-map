@@ -10,11 +10,8 @@
     "dev": "vite --host",
     "build": "tmp=$(mktemp -d); if [ -d public/api ]; then mv public/api \"$tmp/api\"; fi; vite build; status=$?; if [ -d \"$tmp/api\" ]; then mv \"$tmp/api\" public/api; fi; rm -rf \"$tmp\"; rm -rf dist/api; if [ $status -ne 0 ]; then exit $status; fi; npm run sync-public",
     "sync-public": "cp dist/index.html public/ && rm -rf public/assets && cp -r dist/assets public/",
-    "sync-api": "rsync -a --delete --exclude cache api/ public/api/",
-    "build:pages": "VITE_BASE_PATH=/weather-map/ vite build",
+    "sync-api": "rm -rf public/api && mkdir -p public/api && rsync -a --exclude cache api/ public/api/",
     "preview": "vite preview",
-    "preview:pages": "npm run build:pages && vite preview --base /weather-map/",
-    "deploy": "npm run build:pages && gh-pages -d dist",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -29,7 +26,6 @@
     "@types/node": "^25.9.1",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/tsconfig": "^0.9.1",
-    "gh-pages": "^6.3.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vue-tsc": "^3.3.3"

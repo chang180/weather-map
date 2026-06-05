@@ -49,6 +49,21 @@ GET /api/weather.php?lat={lat}&lon={lon}
     "rainfall10min": 40.5,
     "uvIndex": 2
   },
+  "stations": [
+    {
+      "stationName": "臺北",
+      "stationId": "466920",
+      "lat": 25.037658,
+      "lon": 121.514853,
+      "county": "臺北市",
+      "town": "中正區",
+      "observedAt": "2026-06-05T14:00:00+08:00",
+      "temperature": 26.7,
+      "humidity": 95,
+      "windSpeed": 1.4,
+      "weatherText": "陰有雨"
+    }
+  ],
   "forecast": {
     "locationName": "中正區",
     "days": [
@@ -69,6 +84,8 @@ GET /api/weather.php?lat={lat}&lon={lon}
   }
 }
 ```
+
+`stations` 會包含可用座標的所有 O-A0003-001 測站摘要，供地圖輔助區塊顯示全台測站點位；Dashboard 的位置與預報仍以 `current` 最近測站與 `location` 為準。
 
 `forecast.days[].periods` 會包含各 3 小時區間的 `startTime`、`endTime`、`wx`、`temperature`、`pop`。
 
@@ -105,4 +122,4 @@ getWeather(lat, lon)
 
 `getWeather` 會回傳 `WeatherResponse`。若 API 回錯誤格式，前端會轉成帶有 `code` 與 `message` 的 `WeatherApiError`，再由 `useWeather` composable 轉成繁體中文友善提示。
 
-`WeatherMap.vue` 不再讀取 CWA raw JSON，也不再渲染全台測站清單；它只消費目前定位對應的結構化回應。
+`WeatherMap.vue` 不直接讀取 CWA raw JSON；它消費目前定位對應的結構化回應，並使用 `stations` 顯示全部測站點位，地圖中心維持使用者位置或 fallback 位置。

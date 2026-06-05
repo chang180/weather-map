@@ -59,10 +59,25 @@ export interface UmbrellaAdvice {
   icon: string
 }
 
+export interface WeatherStationMarker {
+  stationName: string | null
+  stationId: string | null
+  lat: number
+  lon: number
+  county: string | null
+  town: string | null
+  observedAt: string | null
+  temperature: number | null
+  humidity: number | null
+  windSpeed: number | null
+  weatherText: string | null
+}
+
 export interface WeatherResponse {
   meta: WeatherMeta
   location: WeatherLocation
   current: WeatherCurrent
+  stations: WeatherStationMarker[]
   forecast: WeatherForecast
   advice: UmbrellaAdvice
 }

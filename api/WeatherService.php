@@ -51,6 +51,7 @@ class WeatherService
                 'town' => $town,
             ),
             'current' => $current,
+            'stations' => $this->buildStations($stations),
             'forecast' => $forecastPayload,
             'advice' => $advice,
         );
@@ -73,6 +74,37 @@ class WeatherService
             'rainfall10min' => $this->toNumber(isset($element['Now']['Precipitation']) ? $element['Now']['Precipitation'] : null),
             'uvIndex' => $this->toNumber(isset($element['UVIndex']) ? $element['UVIndex'] : null),
         );
+    }
+
+    private function buildStations($stations)
+    {
+        $payload = array();
+
+        foreach ($stations as $station) {
+            $coordinate = $this->getWgs84Coordinate($station);
+            if (!$coordinate) {
+                continue;
+            }
+
+            $element = isset($station['WeatherElement']) ? $station['WeatherElement'] : array();
+            $geoInfo = isset($station['GeoInfo']) ? $station['GeoInfo'] : array();
+
+            $payload[] = array(
+                'stationName' => isset($station['StationName']) ? $station['StationName'] : null,
+                'stationId' => isset($station['StationId']) ? $station['StationId'] : null,
+                'lat' => $coordinate['lat'],
+                'lon' => $coordinate['lon'],
+                'county' => isset($geoInfo['CountyName']) ? $geoInfo['CountyName'] : null,
+                'town' => isset($geoInfo['TownName']) ? $geoInfo['TownName'] : null,
+                'observedAt' => isset($station['ObsTime']['DateTime']) ? $station['ObsTime']['DateTime'] : null,
+                'temperature' => $this->toNumber(isset($element['AirTemperature']) ? $element['AirTemperature'] : null),
+                'humidity' => $this->toNumber(isset($element['RelativeHumidity']) ? $element['RelativeHumidity'] : null),
+                'windSpeed' => $this->toNumber(isset($element['WindSpeed']) ? $element['WindSpeed'] : null),
+                'weatherText' => isset($element['Weather']) ? $element['Weather'] : null,
+            );
+        }
+
+        return $payload;
     }
 
     private function buildForecast($location)
@@ -218,6 +250,28 @@ class WeatherService
         }
 
         return $time['ElementValue'][0][$key];
+    }
+
+    private function getWgs84Coordinate($station)
+    {
+        $coordinates = isset($station['GeoInfo']['Coordinates']) ? $station['GeoInfo']['Coordinates'] : array();
+        $fallback = null;
+
+        foreach ($coordinates as $coordinate) {
+            $lat = $this->toNumber(isset($coordinate['StationLatitude']) ? $coordinate['StationLatitude'] : null);
+            $lon = $this->toNumber(isset($coordinate['StationLongitude']) ? $coordinate['StationLongitude'] : null);
+            if ($lat === null || $lon === null) {
+                continue;
+            }
+
+            $item = array('lat' => $lat, 'lon' => $lon);
+            if (isset($coordinate['CoordinateName']) && strtoupper($coordinate['CoordinateName']) === 'WGS84') {
+                return $item;
+            }
+            $fallback = $item;
+        }
+
+        return $fallback;
     }
 
     private function toNumber($value)
