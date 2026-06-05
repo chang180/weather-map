@@ -2,9 +2,20 @@
 
 Weather Map 採「前端靜態檔 + 原生 PHP API」同站部署到共享空間。
 
-## API 部署
+## 本機與正式環境的目錄差異
 
-API 原始碼位於根目錄 `api/`。正式環境需將整個 `api/` 目錄上傳到共享空間，並讓站台可由同源路徑存取：
+| 用途 | 本機 Herd | 正式共享空間 |
+| --- | --- | --- |
+| 站台根目錄 | 專案內的 `public/`（Herd `BasicWithPublicValetDriver`） | 主機實際站台根目錄（如 `public_html/`） |
+| PHP API 來源 | `api/` 原始碼，經 `npm run sync-api` **複製**到 `public/api/` | 直接上傳根目錄 `api/` 到站台根目錄下的 `api/` |
+| 前端靜態檔 | `npm run build` 產出後放在 `public/` | 上傳 `public/` 內容到站台根目錄 |
+| `public/api/` | 僅本機同步產物，已列入 `.gitignore` | **不使用**；正式環境 API 路徑為站台根目錄的 `/api/`，不是 `public/api/` |
+
+> **給 AI / 自動化部署的提醒**：`npm run sync-api` 與 `public/api/` 只服務本機 Herd。正式環境請上傳根目錄 `api/`，不要依賴 `public/api/` 或在本機執行 `sync-api` 後再部署。
+
+## API 部署（正式環境）
+
+API 原始碼位於根目錄 `api/`。正式環境需將整個 `api/` 目錄上傳到共享空間站台根目錄，並讓站台可由同源路徑存取：
 
 ```text
 /api/weather.php
@@ -18,9 +29,9 @@ CWA_API_KEY=your-cwa-api-key
 
 若共享主機無法設定環境變數，可在部署目標的專案根目錄放置 `.env`，但不得提交到 git。
 
-## 前端部署（共享空間）
+## 前端部署（正式環境）
 
-前端靜態檔由 Vite build 產出，並同步到 `public/` 供 Herd / 共享空間直接服務。
+前端靜態檔由 Vite build 產出，並同步到 `public/`。正式部署時，請將 `public/` **內的內容**上傳到共享空間站台根目錄，而不是把整個 `public/` 資料夾當成子目錄掛上去。
 
 ```bash
 npm run typecheck
@@ -29,17 +40,24 @@ npm run build
 
 部署時請將 `public/` 內的內容上傳到共享空間站台目錄（依你的主機設定可能是 `public_html/` 或子目錄）。若你的共享空間不是以 `public/` 當站台根目錄，請確保靜態檔可被直接存取。
 
-## 同站部署清單
+## 同站部署清單（正式環境）
 
-正式站台需同時具備：
+正式站台根目錄需同時具備：
 
-- 前端靜態檔：`public/index.html`、`public/assets/`、`public/images/` 等
-- API 目錄：根目錄 `api/` 內容，需可由 `/api/weather.php` 存取
-- API cache：`api/cache/` 需可由 PHP 寫入，且不得對外列目錄
+- 前端靜態檔：`index.html`、`assets/`、`images/` 等（來自 build 後的 `public/` 內容）
+- API 目錄：站台根目錄下的 `api/`（來自專案根目錄 `api/` 原始碼），需可由 `/api/weather.php` 存取
+- API cache：站台根目錄 `api/cache/` 需可由 PHP 寫入，且不得對外列目錄
 
-## 本機 Herd API
+## 本機 Herd（僅開發用）
 
-Herd 會從 `public/` 提供本機站台。修改 `api/` 後，執行：
+Herd 會從專案內的 `public/` 提供本機站台 `weather-map.test`。首次 clone 後請先執行：
+
+```bash
+npm run build
+npm run sync-api
+```
+
+之後若只修改 API，執行 `npm run sync-api` 即可。修改 `api/` 後，執行：
 
 ```bash
 npm run sync-api

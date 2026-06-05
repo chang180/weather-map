@@ -19,9 +19,20 @@ npm run typecheck
 npm run build
 ```
 
+## 本機首次設定
+
+Herd 從專案內的 `public/` 服務 `weather-map.test`。clone 後若 Herd 顯示 404，通常是 `public/` 尚未有建置產物。請執行：
+
+```bash
+npm run build
+npm run sync-api
+```
+
+`public/index.html`、`public/assets/`、`public/api/` 皆為本機產物，已列入 `.gitignore`，不會隨 git 下載。
+
 ## 本機 API 同步
 
-`api/` 是 PHP API 原始碼；Herd 本機站台從 `public/` 服務檔案。修改 API 後請執行：
+`api/` 是 PHP API 原始碼。正式環境直接部署根目錄 `api/`；本機 Herd 則需把 `api/` 複製到 `public/api/`。修改 API 後請執行：
 
 ```bash
 npm run sync-api

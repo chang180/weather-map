@@ -11,13 +11,16 @@
 - npm
 - Laravel Herd（本機 HTTPS 預覽與 PHP API 開發）
 
-## 快速開始
+## 快速開始（本機開發）
 
 ```bash
 npm install
+npm run build
 npm run sync-api
 npm run dev
 ```
+
+`npm run build` 與 `npm run sync-api` 會把前端與 API 產物放到 `public/`，供 Herd 本機站台使用；正式部署流程見 [部署文件](docs/deployment.md)。
 
 開啟終端機顯示的 Vite 網址，通常為：
 

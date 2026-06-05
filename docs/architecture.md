@@ -1,6 +1,6 @@
 # 系統架構
 
-Weather Map 由 Vue/Vite 前端、專案內原生 PHP API（`api/`）與 CWA Open Data 組成。正式環境採共享空間同站部署（前端靜態檔 + PHP API 同源），本機開發可透過 Herd 呼叫 `public/api/weather.php`（由 `npm run sync-api` 同步產生）。
+Weather Map 由 Vue/Vite 前端、專案內原生 PHP API（`api/`）與 CWA Open Data 組成。正式環境採共享空間同站部署（站台根目錄的靜態檔 + 站台根目錄的 `api/` 同源）。本機開發透過 Herd 從 `public/` 服務站台，並以 `npm run sync-api` 將 `api/` 複製到 `public/api/`；此複製步驟僅供本機，正式部署不上傳 `public/api/`。
 
 ## 前端元件樹
 
