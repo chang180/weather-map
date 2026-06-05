@@ -17,6 +17,7 @@ dist
 dist-ssr
 public/index.html
 public/assets
+public/api/
 *.local
 
 # Editor directories and files

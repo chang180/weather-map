@@ -1,51 +1,26 @@
 <?php
-header('Access-Control-Allow-Origin: *'); // 設置CORS頭
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Content-Type: application/json');
 
-require_once __DIR__ . '/load-env.php';
+require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/CwaClient.php';
+require_once __DIR__ . '/GeoService.php';
+require_once __DIR__ . '/WeatherService.php';
 
-loadEnvFile(dirname(__DIR__) . '/.env');
+$lat = getQueryFloat('lat');
+$lon = getQueryFloat('lon');
 
-$apiKey = getenv('CWA_API_KEY');
-if (!$apiKey) {
-    http_response_code(500);
-    echo json_encode(array(
-        'error' => array(
-            'code' => 'MISSING_API_KEY',
-            'message' => 'CWA_API_KEY not configured',
-        ),
-    ));
-    exit;
+if ($lat === null || $lon === null) {
+    sendError('MISSING_LOCATION', 'lat and lon query parameters are required', 400);
 }
 
-$apiUrl = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0003-001'; // 使用O-A0003-001資料集
-
-$params = array(
-    'Authorization' => $apiKey,
-);
-
-// Create the URL with parameters
-$url = $apiUrl . '?' . http_build_query($params);
-
-// Initialize cURL
-$ch = curl_init();
-
-// Set cURL options
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-
-// Execute the request and fetch the response
-$response = curl_exec($ch);
-
-// Check for errors
-if(curl_errno($ch)) {
-    echo 'Error:' . curl_error($ch);
-} else {
-    echo $response;
+if ($lat < 20 || $lat > 27 || $lon < 118 || $lon > 123) {
+    sendError('LOCATION_OUT_OF_RANGE', 'lat/lon must be within Taiwan area', 400);
 }
 
-// Close cURL
-curl_close($ch);
-?>
+try {
+    $client = new CwaClient(requireApiKey());
+    $service = new WeatherService($client, new GeoService());
+
+    sendJson($service->getWeather($lat, $lon));
+} catch (RuntimeException $error) {
+    sendError('WEATHER_SERVICE_ERROR', 'Unable to load weather data', 502, $error->getMessage());
+}

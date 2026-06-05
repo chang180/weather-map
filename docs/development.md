@@ -19,4 +19,22 @@ npm run typecheck
 npm run build
 ```
 
+## 本機 API 同步
+
+`api/` 是 PHP API 原始碼；Herd 本機站台從 `public/` 服務檔案。修改 API 後請執行：
+
+```bash
+npm run sync-api
+```
+
+再以 Herd HTTPS 驗證：
+
+```bash
+curl -ks "https://weather-map.test/api/weather.php?lat=25.04&lon=121.52" | jq .
+```
+
+## 正式部署方式
+
+正式環境改為部署到共享空間（同站部署），前端以同源 `/api/weather.php` 取得資料，詳見 [部署文件](deployment.md)。
+
 <!-- TODO: Phase X 補齊 -->

@@ -8,8 +8,9 @@
   },
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build && npm run sync-public",
+    "build": "rm -rf public/api && vite build && npm run sync-public",
     "sync-public": "cp dist/index.html public/ && rm -rf public/assets && cp -r dist/assets public/",
+    "sync-api": "rsync -a --delete --exclude cache api/ public/api/",
     "build:pages": "VITE_BASE_PATH=/weather-map/ vite build",
     "preview": "vite preview",
     "preview:pages": "npm run build:pages && vite preview --base /weather-map/",

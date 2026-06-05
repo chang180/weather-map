@@ -1,0 +1,231 @@
+<?php
+
+class WeatherService
+{
+    private $client;
+    private $geoService;
+
+    public function __construct(CwaClient $client, GeoService $geoService)
+    {
+        $this->client = $client;
+        $this->geoService = $geoService;
+    }
+
+    public function getWeather($lat, $lon)
+    {
+        $observation = $this->client->getObservation();
+        $stations = isset($observation['records']['Station']) ? $observation['records']['Station'] : array();
+        $nearest = $this->geoService->findNearestStation($stations, $lat, $lon);
+        $station = $nearest['station'];
+        $county = isset($station['GeoInfo']['CountyName']) ? $station['GeoInfo']['CountyName'] : '';
+        $town = isset($station['GeoInfo']['TownName']) ? $station['GeoInfo']['TownName'] : '';
+
+        $forecast = $this->client->getForecastByCounty($county);
+        $forecastLocation = $this->geoService->findForecastLocation($forecast, $county, $town);
+        if (!$forecastLocation) {
+            $forecast = $this->client->getTaiwanForecast();
+            $forecastLocation = $this->geoService->findForecastLocation($forecast, $county, $town);
+        }
+        if (!$forecastLocation) {
+            throw new RuntimeException('No matching forecast location for ' . $county . $town);
+        }
+
+        $current = $this->buildCurrent($station);
+        $forecastPayload = $this->buildForecast($forecastLocation);
+        $advice = $this->buildAdvice($current, $forecastPayload);
+
+        return array(
+            'meta' => array(
+                'fetchedAt' => date('c'),
+                'locationMethod' => 'nearest_station',
+                'datasets' => array(
+                    'observation' => CwaClient::OBSERVATION_DATASET,
+                    'forecast' => isset($forecast['result']['resource_id']) ? $forecast['result']['resource_id'] : null,
+                ),
+                'stationDistanceKm' => round($nearest['distanceKm'], 2),
+            ),
+            'location' => array(
+                'lat' => $lat,
+                'lon' => $lon,
+                'county' => $county,
+                'town' => $town,
+            ),
+            'current' => $current,
+            'forecast' => $forecastPayload,
+            'advice' => $advice,
+        );
+    }
+
+    private function buildCurrent($station)
+    {
+        $element = isset($station['WeatherElement']) ? $station['WeatherElement'] : array();
+
+        return array(
+            'stationName' => isset($station['StationName']) ? $station['StationName'] : null,
+            'stationId' => isset($station['StationId']) ? $station['StationId'] : null,
+            'observedAt' => isset($station['ObsTime']['DateTime']) ? $station['ObsTime']['DateTime'] : null,
+            'temperature' => $this->toNumber(isset($element['AirTemperature']) ? $element['AirTemperature'] : null),
+            'humidity' => $this->toNumber(isset($element['RelativeHumidity']) ? $element['RelativeHumidity'] : null),
+            'pressure' => $this->toNumber(isset($element['AirPressure']) ? $element['AirPressure'] : null),
+            'windSpeed' => $this->toNumber(isset($element['WindSpeed']) ? $element['WindSpeed'] : null),
+            'windDirection' => $this->toNumber(isset($element['WindDirection']) ? $element['WindDirection'] : null),
+            'weatherText' => isset($element['Weather']) ? $element['Weather'] : null,
+            'rainfall10min' => $this->toNumber(isset($element['Now']['Precipitation']) ? $element['Now']['Precipitation'] : null),
+            'uvIndex' => $this->toNumber(isset($element['UVIndex']) ? $element['UVIndex'] : null),
+        );
+    }
+
+    private function buildForecast($location)
+    {
+        $elements = $this->indexElements(isset($location['WeatherElement']) ? $location['WeatherElement'] : array());
+        $periods = array();
+        $times = isset($elements['天氣現象']['Time']) ? $elements['天氣現象']['Time'] : array();
+
+        foreach ($times as $index => $time) {
+            $periods[] = array(
+                'startTime' => isset($time['StartTime']) ? $time['StartTime'] : null,
+                'endTime' => isset($time['EndTime']) ? $time['EndTime'] : null,
+                'wx' => $this->elementValue($time, 'Weather'),
+                'temperature' => $this->toNumber($this->timeElementValue($elements, '溫度', $index, 'Temperature')),
+                'pop' => $this->toNumber($this->timeElementValue($elements, '3小時降雨機率', $index, 'ProbabilityOfPrecipitation')),
+            );
+        }
+
+        $days = $this->groupForecastDays($periods);
+
+        return array(
+            'locationName' => isset($location['LocationName']) ? $location['LocationName'] : null,
+            'days' => $days,
+        );
+    }
+
+    private function buildAdvice($current, $forecast)
+    {
+        $periods = array();
+        foreach ($forecast['days'] as $day) {
+            foreach ($day['periods'] as $period) {
+                $periods[] = $period;
+            }
+        }
+
+        $firstPop = isset($periods[0]['pop']) ? $periods[0]['pop'] : null;
+        $today = date('Y-m-d');
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+        $todayPop = $this->maxPopForDate($forecast['days'], $today);
+        $tomorrowPop = $this->maxPopForDate($forecast['days'], $tomorrow);
+        $weatherText = isset($current['weatherText']) ? $current['weatherText'] : '';
+        $rainfall = isset($current['rainfall10min']) ? (float) $current['rainfall10min'] : 0;
+
+        $urgent = $rainfall > 0 || preg_match('/雨|雷/u', $weatherText) || ($firstPop !== null && $firstPop >= 50);
+        $suggest = $urgent || ($todayPop !== null && $todayPop >= 40) || ($tomorrowPop !== null && $tomorrowPop >= 50);
+
+        if ($urgent) {
+            return array(
+                'level' => 'urgent',
+                'reason' => '目前或未來短時間有降雨風險，建議立即帶傘。',
+                'icon' => 'umbrella',
+            );
+        }
+
+        if ($suggest) {
+            return array(
+                'level' => 'suggest',
+                'reason' => '今日或明日降雨機率偏高，出門建議帶傘。',
+                'icon' => 'umbrella',
+            );
+        }
+
+        return array(
+            'level' => 'none',
+            'reason' => '目前降雨風險較低，可視行程決定是否帶傘。',
+            'icon' => 'sun',
+        );
+    }
+
+    private function groupForecastDays($periods)
+    {
+        $groups = array();
+
+        foreach ($periods as $period) {
+            if (empty($period['startTime'])) {
+                continue;
+            }
+
+            $date = substr($period['startTime'], 0, 10);
+            if (!isset($groups[$date])) {
+                $groups[$date] = array(
+                    'date' => $date,
+                    'wx' => $period['wx'],
+                    'maxTemp' => null,
+                    'minTemp' => null,
+                    'pop' => null,
+                    'periods' => array(),
+                );
+            }
+
+            $temp = $period['temperature'];
+            $pop = $period['pop'];
+            if ($temp !== null) {
+                $groups[$date]['maxTemp'] = $groups[$date]['maxTemp'] === null ? $temp : max($groups[$date]['maxTemp'], $temp);
+                $groups[$date]['minTemp'] = $groups[$date]['minTemp'] === null ? $temp : min($groups[$date]['minTemp'], $temp);
+            }
+            if ($pop !== null) {
+                $groups[$date]['pop'] = $groups[$date]['pop'] === null ? $pop : max($groups[$date]['pop'], $pop);
+            }
+
+            $groups[$date]['periods'][] = $period;
+        }
+
+        return array_slice(array_values($groups), 0, 3);
+    }
+
+    private function maxPopForDate($days, $date)
+    {
+        foreach ($days as $day) {
+            if ($day['date'] === $date) {
+                return $day['pop'];
+            }
+        }
+
+        return null;
+    }
+
+    private function indexElements($weatherElements)
+    {
+        $indexed = array();
+        foreach ($weatherElements as $element) {
+            if (isset($element['ElementName'])) {
+                $indexed[$element['ElementName']] = $element;
+            }
+        }
+
+        return $indexed;
+    }
+
+    private function timeElementValue($elements, $elementName, $index, $key)
+    {
+        if (!isset($elements[$elementName]['Time'][$index])) {
+            return null;
+        }
+
+        return $this->elementValue($elements[$elementName]['Time'][$index], $key);
+    }
+
+    private function elementValue($time, $key)
+    {
+        if (!isset($time['ElementValue'][0][$key])) {
+            return null;
+        }
+
+        return $time['ElementValue'][0][$key];
+    }
+
+    private function toNumber($value)
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        return (float) $value;
+    }
+}

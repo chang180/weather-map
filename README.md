@@ -2,8 +2,7 @@
 
 以 Vue 3、Leaflet 顯示台灣氣象觀測資料的地圖應用，後續將升級為以使用者位置為中心的個人化氣象網站。
 
-- 線上版本：https://chang180.github.io/weather-map/
-- API 來源：https://chang180backend.com/api/weather.php
+- 部署方式：共享空間同站部署（前端 + 原生 PHP API）
 - 完整文件：[docs/README.md](docs/README.md)
 
 ## 環境需求
@@ -33,3 +32,5 @@ http://localhost:3000
 npm run typecheck
 npm run build
 ```
+
+本機 PHP API 修改後，執行 `npm run sync-api` 同步到 Herd 用的 `public/api/`。API 合約請見 [docs/api.md](docs/api.md)。
