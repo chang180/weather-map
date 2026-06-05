@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host",
-    "build": "rm -rf public/api && vite build && npm run sync-public",
+    "build": "tmp=$(mktemp -d); if [ -d public/api ]; then mv public/api \"$tmp/api\"; fi; vite build; status=$?; if [ -d \"$tmp/api\" ]; then mv \"$tmp/api\" public/api; fi; rm -rf \"$tmp\"; rm -rf dist/api; if [ $status -ne 0 ]; then exit $status; fi; npm run sync-public",
     "sync-public": "cp dist/index.html public/ && rm -rf public/assets && cp -r dist/assets public/",
     "sync-api": "rsync -a --delete --exclude cache api/ public/api/",
     "build:pages": "VITE_BASE_PATH=/weather-map/ vite build",

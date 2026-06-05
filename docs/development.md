@@ -33,6 +33,25 @@ npm run sync-api
 curl -ks "https://weather-map.test/api/weather.php?lat=25.04&lon=121.52" | jq .
 ```
 
+## 前端 API URL
+
+前端預設以同源 API 讀取資料：
+
+```ts
+const API_URL = import.meta.env.VITE_API_URL ?? '/api/weather.php'
+```
+
+一般開發不需要設定 `VITE_API_URL`。若要覆寫，只能設定 API 路徑或 API URL，**不可**把 `CWA_API_KEY` 放進任何 `VITE_*` 變數。
+
+Vite dev server 已設定 `/api` proxy 到 Herd：
+
+```text
+http://localhost:3000/api/weather.php?lat=25.04&lon=121.52
+→ https://weather-map.test/api/weather.php?lat=25.04&lon=121.52
+```
+
+因此使用 `npm run dev` 前，請先確認已執行 `npm run sync-api`，且 Herd 的 `https://weather-map.test` 可正常回應 PHP API。
+
 ## 正式部署方式
 
 正式環境改為部署到共享空間（同站部署），前端以同源 `/api/weather.php` 取得資料，詳見 [部署文件](deployment.md)。

@@ -4,6 +4,14 @@
       {{ locationNotice }}
       <button type="button" class="locate-link" @click="requestLocation">重新定位</button>
     </div>
+    <div v-if="error" class="location-notice error-notice">
+      {{ error }}
+      <button type="button" class="locate-link" @click="requestLocation">重試</button>
+    </div>
+    <div v-if="loading" class="weather-status">氣象資料載入中...</div>
+    <div v-else-if="weather" class="weather-status" :class="getAdviceClass(weather.advice.level)">
+      {{ getAdviceIcon(weather.advice.level) }} {{ getAdviceLabel(weather.advice.level) }}：{{ weather.advice.reason }}
+    </div>
     <button type="button" class="locate-btn" @click="requestLocation" title="定位到我的位置">
       📍
     </button>
@@ -12,11 +20,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted } from "vue";
-import { getWeatherData } from "./api";
+import { shallowRef, onMounted, watch } from "vue";
 import L from 'leaflet';
 import type { Map, LayerGroup } from 'leaflet';
-import type { WeatherStation } from './types/weather';
+import type { WeatherResponse } from './types/weather';
+import { useWeather } from './composables/useWeather';
+import { getAdviceClass, getAdviceIcon, getAdviceLabel } from './utils/umbrellaAdvice';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.fullscreen';
 import 'leaflet.fullscreen/dist/Control.FullScreen.css';
@@ -30,19 +39,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: `${baseUrl}images/marker-shadow.png`,
 });
 
-const DEFAULT_LAT = 23.6978;
-const DEFAULT_LON = 120.9605;
-
-const weatherData = ref<WeatherStation[]>([]);
+const { weather, loading, error, locationNotice, mapCenter, requestLocation } = useWeather();
 const map = shallowRef<Map | null>(null);
-const locationNotice = ref("");
 const markersLayer = shallowRef<LayerGroup | null>(null);
-
-const geoOptions = {
-  enableHighAccuracy: true,
-  timeout: 10000,
-  maximumAge: 0,
-};
 
 const initMap = (lat: number, lon: number): void => {
   if (map.value) {
@@ -64,23 +63,6 @@ const initMap = (lat: number, lon: number): void => {
 
   markersLayer.value = L.layerGroup().addTo(map.value);
 
-  weatherData.value.forEach((station) => {
-    const stationLat = Number(station.GeoInfo.Coordinates[1].StationLatitude);
-    const stationLon = Number(station.GeoInfo.Coordinates[1].StationLongitude);
-    if (!markersLayer.value) {
-      return;
-    }
-
-    const marker = L.marker([stationLat, stationLon]).addTo(markersLayer.value);
-    marker.bindPopup(`
-        <h3>${station.StationName}</h3>
-        <p>Temperature: ${station.WeatherElement.AirTemperature} °C</p>
-        <p>Humidity: ${station.WeatherElement.RelativeHumidity} %</p>
-        <p>Wind Speed: ${station.WeatherElement.WindSpeed} m/s</p>
-        <p>Weather: ${station.WeatherElement.Weather}</p>
-      `);
-  });
-
   // 確保地圖在容器大小改變後刷新
   window.addEventListener("resize", () => {
     map.value?.invalidateSize();
@@ -96,67 +78,38 @@ const initMap = (lat: number, lon: number): void => {
   });
 };
 
-const fetchWeatherData = async (lat: number, lon: number): Promise<void> => {
-  try {
-    const data = await getWeatherData();
-    weatherData.value = data;
-    initMap(lat, lon);
-  } catch (err) {
-    console.error("Failed to fetch weather data", err);
-    locationNotice.value =
-      "無法載入氣象資料。此網站依賴外部 API（chang180backend.com），請確認 API 可連線後重新整理。";
-  }
-};
-
-const getLocationErrorMessage = (error?: GeolocationPositionError): string => {
-  if (!error) {
-    return "無法取得您的位置，已改以台灣中心顯示。";
+const formatValue = (value: number | string | null, unit = ''): string => {
+  if (value === null || value === '') {
+    return '無資料';
   }
 
-  switch (error.code) {
-    case error.PERMISSION_DENIED:
-      return "定位權限被拒絕，已改以台灣中心顯示。請在瀏覽器設定中允許此網站使用位置資訊。";
-    case error.POSITION_UNAVAILABLE:
-      return "目前無法取得位置，已改以台灣中心顯示。";
-    case error.TIMEOUT:
-      return "定位逾時，已改以台灣中心顯示。";
-    default:
-      return "無法取得您的位置，已改以台灣中心顯示。";
-  }
+  return `${value}${unit}`;
 };
 
-const useFallbackLocation = (error?: GeolocationPositionError): void => {
-  locationNotice.value = getLocationErrorMessage(error);
-  fetchWeatherData(DEFAULT_LAT, DEFAULT_LON);
-};
+const renderWeatherMarker = (payload: WeatherResponse): void => {
+  initMap(mapCenter.value.lat, mapCenter.value.lon);
 
-const requestLocation = (): void => {
-  locationNotice.value = "";
-
-  if (!window.isSecureContext) {
-    locationNotice.value =
-      "此頁面未使用 HTTPS，瀏覽器無法詢問定位權限。請改用 HTTPS 網址開啟。";
-    fetchWeatherData(DEFAULT_LAT, DEFAULT_LON);
+  if (!markersLayer.value) {
     return;
   }
 
-  if (!navigator.geolocation) {
-    useFallbackLocation();
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      locationNotice.value = "";
-      fetchWeatherData(position.coords.latitude, position.coords.longitude);
-    },
-    (error) => {
-      console.error("Geolocation failed", error);
-      useFallbackLocation(error);
-    },
-    geoOptions
-  );
+  markersLayer.value.clearLayers();
+  const marker = L.marker([mapCenter.value.lat, mapCenter.value.lon]).addTo(markersLayer.value);
+  marker.bindPopup(`
+    <h3>${payload.current.stationName ?? '最近測站'}</h3>
+    <p>${payload.location.county}${payload.location.town}</p>
+    <p>氣溫：${formatValue(payload.current.temperature, ' °C')}</p>
+    <p>濕度：${formatValue(payload.current.humidity, ' %')}</p>
+    <p>風速：${formatValue(payload.current.windSpeed, ' m/s')}</p>
+    <p>天氣：${payload.current.weatherText ?? '無資料'}</p>
+  `);
 };
+
+watch(weather, (payload) => {
+  if (payload) {
+    renderWeatherMarker(payload);
+  }
+});
 
 onMounted(requestLocation);
 </script>
@@ -191,6 +144,46 @@ onMounted(requestLocation);
   border-radius: 6px;
   color: #664d03;
   font-size: 14px;
+}
+
+.error-notice {
+  top: 56px;
+  background: rgba(248, 215, 218, 0.95);
+  border-color: #f1aeb5;
+  color: #58151c;
+}
+
+.weather-status {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: 90%;
+  padding: 8px 12px;
+  border: 1px solid #b6d4fe;
+  border-radius: 6px;
+  background: rgba(207, 226, 255, 0.95);
+  color: #052c65;
+  font-size: 14px;
+}
+
+.advice-urgent {
+  border-color: #f1aeb5;
+  background: rgba(248, 215, 218, 0.95);
+  color: #58151c;
+}
+
+.advice-suggest {
+  border-color: #ffe69c;
+  background: rgba(255, 243, 205, 0.95);
+  color: #664d03;
+}
+
+.advice-none {
+  border-color: #a3cfbb;
+  background: rgba(209, 231, 221, 0.95);
+  color: #0a3622;
 }
 
 .locate-link,

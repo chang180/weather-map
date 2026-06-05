@@ -94,3 +94,15 @@ GET /api/weather.php?lat={lat}&lon={lon}
 | `INVALID_QUERY` | 400 | `lat` 或 `lon` 不是數字 |
 | `LOCATION_OUT_OF_RANGE` | 400 | 座標不在台灣周邊範圍 |
 | `WEATHER_SERVICE_ERROR` | 502 | CWA 連線、解析或位置匹配失敗 |
+
+## 前端消費方式
+
+前端統一透過 `src/api.ts` 呼叫：
+
+```ts
+getWeather(lat, lon)
+```
+
+`getWeather` 會回傳 `WeatherResponse`。若 API 回錯誤格式，前端會轉成帶有 `code` 與 `message` 的 `WeatherApiError`，再由 `useWeather` composable 轉成繁體中文友善提示。
+
+`WeatherMap.vue` 不再讀取 CWA raw JSON，也不再渲染全台測站清單；它只消費目前定位對應的結構化回應。

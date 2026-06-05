@@ -15,6 +15,7 @@
 
 ```bash
 npm install
+npm run sync-api
 npm run dev
 ```
 
