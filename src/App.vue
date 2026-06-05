@@ -5,7 +5,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import WeatherMap from './WeatherMap.vue';
 </script>
 

@@ -26,3 +26,10 @@ http://localhost:3000
 ```
 
 本機 Herd 預覽與部署細節請參考 [開發環境文件](docs/development.md) 與 [部署文件](docs/deployment.md)。
+
+## 驗證
+
+```bash
+npm run typecheck
+npm run build
+```

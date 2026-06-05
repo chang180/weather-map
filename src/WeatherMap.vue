@@ -11,17 +11,19 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from "vue";
+<script setup lang="ts">
+import { ref, shallowRef, onMounted } from "vue";
 import { getWeatherData } from "./api";
 import L from 'leaflet';
+import type { Map, LayerGroup } from 'leaflet';
+import type { WeatherStation } from './types/weather';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.fullscreen';
 import 'leaflet.fullscreen/dist/Control.FullScreen.css';
 
 const baseUrl = import.meta.env.BASE_URL;
 
-delete L.Icon.Default.prototype._getIconUrl;
+delete (L.Icon.Default.prototype as L.Icon.Default & { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: `${baseUrl}images/marker-icon-2x.png`,
   iconUrl: `${baseUrl}images/marker-icon.png`,
@@ -31,10 +33,10 @@ L.Icon.Default.mergeOptions({
 const DEFAULT_LAT = 23.6978;
 const DEFAULT_LON = 120.9605;
 
-const weatherData = ref([]);
-const map = ref(null);
+const weatherData = ref<WeatherStation[]>([]);
+const map = shallowRef<Map | null>(null);
 const locationNotice = ref("");
-const markersLayer = ref(null);
+const markersLayer = shallowRef<LayerGroup | null>(null);
 
 const geoOptions = {
   enableHighAccuracy: true,
@@ -42,7 +44,7 @@ const geoOptions = {
   maximumAge: 0,
 };
 
-const initMap = (lat, lon) => {
+const initMap = (lat: number, lon: number): void => {
   if (map.value) {
     map.value.setView([lat, lon], 12);
     return;
@@ -57,14 +59,18 @@ const initMap = (lat, lon) => {
   }).setView([lat, lon], 12); // 將地圖中心設置為當前位置，並設置適當的縮放級別
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: false, // 移除底部的標題
+    attribution: "", // 移除底部的標題
   }).addTo(map.value);
 
   markersLayer.value = L.layerGroup().addTo(map.value);
 
   weatherData.value.forEach((station) => {
-    const stationLat = station.GeoInfo.Coordinates[1].StationLatitude;
-    const stationLon = station.GeoInfo.Coordinates[1].StationLongitude;
+    const stationLat = Number(station.GeoInfo.Coordinates[1].StationLatitude);
+    const stationLon = Number(station.GeoInfo.Coordinates[1].StationLongitude);
+    if (!markersLayer.value) {
+      return;
+    }
+
     const marker = L.marker([stationLat, stationLon]).addTo(markersLayer.value);
     marker.bindPopup(`
         <h3>${station.StationName}</h3>
@@ -77,7 +83,7 @@ const initMap = (lat, lon) => {
 
   // 確保地圖在容器大小改變後刷新
   window.addEventListener("resize", () => {
-    map.value.invalidateSize();
+    map.value?.invalidateSize();
   });
 
   // 事件監聽
@@ -90,7 +96,7 @@ const initMap = (lat, lon) => {
   });
 };
 
-const fetchWeatherData = async (lat, lon) => {
+const fetchWeatherData = async (lat: number, lon: number): Promise<void> => {
   try {
     const data = await getWeatherData();
     weatherData.value = data;
@@ -102,7 +108,7 @@ const fetchWeatherData = async (lat, lon) => {
   }
 };
 
-const getLocationErrorMessage = (error) => {
+const getLocationErrorMessage = (error?: GeolocationPositionError): string => {
   if (!error) {
     return "無法取得您的位置，已改以台灣中心顯示。";
   }
@@ -119,12 +125,12 @@ const getLocationErrorMessage = (error) => {
   }
 };
 
-const useFallbackLocation = (error) => {
+const useFallbackLocation = (error?: GeolocationPositionError): void => {
   locationNotice.value = getLocationErrorMessage(error);
   fetchWeatherData(DEFAULT_LAT, DEFAULT_LON);
 };
 
-const requestLocation = () => {
+const requestLocation = (): void => {
   locationNotice.value = "";
 
   if (!window.isSecureContext) {
