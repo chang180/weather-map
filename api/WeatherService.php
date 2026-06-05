@@ -4,11 +4,16 @@ class WeatherService
 {
     private $client;
     private $geoService;
+    private $adminAreaService;
 
-    public function __construct(CwaClient $client, GeoService $geoService)
-    {
+    public function __construct(
+        CwaClient $client,
+        GeoService $geoService,
+        AdministrativeAreaService $adminAreaService
+    ) {
         $this->client = $client;
         $this->geoService = $geoService;
+        $this->adminAreaService = $adminAreaService;
     }
 
     public function getWeather($lat, $lon)
@@ -17,8 +22,14 @@ class WeatherService
         $stations = isset($observation['records']['Station']) ? $observation['records']['Station'] : array();
         $nearest = $this->geoService->findNearestStation($stations, $lat, $lon);
         $station = $nearest['station'];
-        $county = isset($station['GeoInfo']['CountyName']) ? $station['GeoInfo']['CountyName'] : '';
-        $town = isset($station['GeoInfo']['TownName']) ? $station['GeoInfo']['TownName'] : '';
+        $stationGeoInfo = isset($station['GeoInfo']) ? $station['GeoInfo'] : array();
+        $stationFallback = array(
+            'county' => isset($stationGeoInfo['CountyName']) ? $stationGeoInfo['CountyName'] : '',
+            'town' => isset($stationGeoInfo['TownName']) ? $stationGeoInfo['TownName'] : '',
+        );
+        $adminArea = $this->adminAreaService->resolve($lat, $lon, $stationFallback);
+        $county = $adminArea['county'];
+        $town = $adminArea['town'];
 
         $forecast = $this->client->getForecastByCounty($county);
         $forecastLocation = $this->geoService->findForecastLocation($forecast, $county, $town);
@@ -37,12 +48,14 @@ class WeatherService
         return array(
             'meta' => array(
                 'fetchedAt' => date('c'),
-                'locationMethod' => 'nearest_station',
+                'locationMethod' => $adminArea['method'],
                 'datasets' => array(
                     'observation' => CwaClient::OBSERVATION_DATASET,
                     'forecast' => isset($forecast['result']['resource_id']) ? $forecast['result']['resource_id'] : null,
                 ),
                 'stationDistanceKm' => round($nearest['distanceKm'], 2),
+                'observationStationName' => isset($station['StationName']) ? $station['StationName'] : null,
+                'observationStationId' => isset($station['StationId']) ? $station['StationId'] : null,
             ),
             'location' => array(
                 'lat' => $lat,

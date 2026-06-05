@@ -49,3 +49,5 @@ http://localhost:3000/api/* → https://weather-map.test/api/*
 ```
 
 正式部署時需先部署 `api/`，再部署前端靜態檔，避免前端與 API 合約不同步。
+
+後端以 Redis 快取 CWA 與 NLSC 回應（3 小時）。`location` 由 NLSC 行政區反查決定；`current` 觀測值仍取最近測站。

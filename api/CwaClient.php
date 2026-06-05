@@ -6,7 +6,7 @@ class CwaClient
     const TAIWAN_FORECAST_DATASET = 'F-D0047-089';
 
     private $apiKey;
-    private $cacheDir;
+    private $cache;
     private $ttlSeconds;
 
     private $countyForecastDatasets = array(
@@ -34,11 +34,11 @@ class CwaClient
         '金門縣' => 'F-D0047-085',
     );
 
-    public function __construct($apiKey, $cacheDir = null, $ttlSeconds = 600)
+    public function __construct($apiKey, ?RedisCache $cache = null, $ttlSeconds = null)
     {
         $this->apiKey = $apiKey;
-        $this->cacheDir = $cacheDir ?: __DIR__ . '/cache';
-        $this->ttlSeconds = $ttlSeconds;
+        $this->cache = $cache;
+        $this->ttlSeconds = $ttlSeconds ?: RedisCache::TTL_SECONDS;
     }
 
     public function getObservation()
@@ -68,20 +68,17 @@ class CwaClient
 
     private function fetchDataset($datasetId)
     {
-        $url = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/' . rawurlencode($datasetId)
-            . '?' . http_build_query(array('Authorization' => $this->apiKey));
-        $cacheFile = $this->cacheDir . '/' . sha1($url) . '.json';
+        $cacheKey = 'weather-map:cwa:' . $datasetId;
 
-        if (is_readable($cacheFile) && (time() - filemtime($cacheFile)) < $this->ttlSeconds) {
-            $cached = json_decode(file_get_contents($cacheFile), true);
+        if ($this->cache && $this->cache->isAvailable()) {
+            $cached = $this->cache->get($cacheKey);
             if (is_array($cached)) {
                 return $cached;
             }
         }
 
-        if (!is_dir($this->cacheDir)) {
-            mkdir($this->cacheDir, 0775, true);
-        }
+        $url = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/' . rawurlencode($datasetId)
+            . '?' . http_build_query(array('Authorization' => $this->apiKey));
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -101,7 +98,9 @@ class CwaClient
             throw new RuntimeException('CWA dataset ' . $datasetId . ' returned HTTP ' . $httpCode);
         }
 
-        file_put_contents($cacheFile, $body);
+        if ($this->cache && $this->cache->isAvailable()) {
+            $this->cache->set($cacheKey, $decoded, $this->ttlSeconds);
+        }
 
         return $decoded;
     }

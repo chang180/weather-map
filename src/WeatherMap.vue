@@ -7,10 +7,10 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, shallowRef, watch } from 'vue';
 import L from 'leaflet';
+import { FullScreen } from 'leaflet.fullscreen';
 import type { LayerGroup, Map } from 'leaflet';
 import type { WeatherResponse } from './types/weather';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.fullscreen';
 import 'leaflet.fullscreen/dist/Control.FullScreen.css';
 
 const props = defineProps<{
@@ -48,12 +48,15 @@ const initMap = (): void => {
   }
 
   map.value = L.map('map', {
-    fullscreenControl: true,
-    fullscreenControlOptions: {
-      position: 'topleft',
-    },
     zoomControl: false,
   }).setView([props.mapCenter.lat, props.mapCenter.lon], 12);
+
+  map.value.addControl(new FullScreen({
+    position: 'topleft',
+    forceSeparateButton: true,
+    title: '全螢幕',
+    titleCancel: '離開全螢幕',
+  }));
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '',

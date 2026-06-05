@@ -1,29 +1,36 @@
 <template>
   <section class="current-card">
-    <div>
+    <div class="card-head">
       <p class="eyebrow">即時觀測</p>
-      <h2>{{ current.stationName ?? '最近測站' }}</h2>
-      <p class="location">{{ location.county }}{{ location.town }}</p>
+      <h2 class="location-title">{{ location.county }}{{ location.town }}</h2>
+      <p class="station-source">
+        觀測來源：{{ observationStationName }}
+        <span v-if="meta.stationDistanceKm !== null"> · 約 {{ formatValue(meta.stationDistanceKm, ' km') }}</span>
+      </p>
     </div>
 
     <div class="temperature">{{ formatValue(current.temperature, '°C') }}</div>
 
     <div class="summary">
       <span>{{ current.weatherText ?? '無資料' }}</span>
-      <span>觀測 {{ formatDateTime(current.observedAt) }}</span>
-      <span>距離 {{ formatValue(meta.stationDistanceKm, ' km') }}</span>
+      <span>觀測時間 {{ formatDateTime(current.observedAt) }}</span>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { WeatherCurrent, WeatherLocation, WeatherMeta } from '../types/weather';
 
-defineProps<{
+const props = defineProps<{
   current: WeatherCurrent
   location: WeatherLocation
   meta: WeatherMeta
 }>();
+
+const observationStationName = computed(
+  () => props.meta.observationStationName ?? props.current.stationName ?? '最近測站',
+);
 
 const formatValue = (value: number | null, unit: string): string => {
   if (value === null) {
@@ -59,26 +66,28 @@ const formatDateTime = (value: string | null): string => {
   box-shadow: var(--shadow-card);
 }
 
-.eyebrow,
-.location,
-h2 {
+.card-head,
+h2,
+.summary {
   margin: 0;
 }
 
 .eyebrow {
+  margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   font-weight: 700;
 }
 
-h2 {
+.location-title {
   margin-top: var(--space-1);
   font-size: var(--font-size-lg);
 }
 
-.location,
-.summary {
+.station-source {
+  margin: var(--space-2) 0 0;
   color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .temperature {
@@ -90,6 +99,7 @@ h2 {
 .summary {
   display: grid;
   gap: var(--space-2);
+  color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
 </style>

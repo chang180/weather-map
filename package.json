@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev": "vite --host",
-    "build": "git checkout index.html; tmp=$(mktemp -d); if [ -d public/api ]; then mv public/api \"$tmp/api\"; fi; rm -rf public/assets; vite build; status=$?; if [ -d \"$tmp/api\" ]; then mv \"$tmp/api\" public/api; fi; rm -rf \"$tmp\"; rm -rf dist/api; if [ $status -ne 0 ]; then exit $status; fi; npm run sync-public",
-    "sync-public": "cp dist/index.html public/ && rm -rf public/assets && cp -r dist/assets public/ && cp public/index.html index.html && rm -rf assets && cp -r public/assets .",
+    "build": "node scripts/build.mjs",
+    "sync-public": "node scripts/sync-public.mjs",
     "sync-api": "node scripts/sync-api.mjs",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit"

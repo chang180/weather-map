@@ -10,12 +10,20 @@ CWA_API_KEY=your-cwa-api-key-here
 
 ## Redis（外部伺服器）
 
-Redis 由外部伺服器提供，請在 `.env` 設定連線參數（可參考 `.env.example`）：
+Redis 由外部伺服器提供，用於快取 CWA 資料集與 NLSC 行政區反查結果（TTL 3 小時）。請在 `.env` 設定連線參數（可參考 `.env.example`）：
 
 ```env
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_PASSWORD=your-redis-password
+```
+
+本機 PHP 需啟用 `redis` 擴充（Herd 預設可用）。若 Redis 無法連線，API 會自動 fallback 直接打 CWA / NLSC，不會中斷服務。
+
+行政區顯示使用 NLSC 反查；即時觀測仍取最近測站。永和座標驗證範例：
+
+```bash
+curl -ks "https://weather-map.test/api/weather.php?lat=25.008&lon=121.515" | jq '.location, .meta'
 ```
 
 ## TypeScript

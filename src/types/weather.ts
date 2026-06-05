@@ -2,12 +2,14 @@ export type AdviceLevel = 'urgent' | 'suggest' | 'none'
 
 export interface WeatherMeta {
   fetchedAt: string
-  locationMethod: 'nearest_station' | string
+  locationMethod: 'nlsc_reverse_geocode' | 'nearest_station_fallback' | string
   datasets: {
     observation: string | null
     forecast: string | null
   }
   stationDistanceKm: number | null
+  observationStationName: string | null
+  observationStationId: string | null
 }
 
 export interface WeatherLocation {

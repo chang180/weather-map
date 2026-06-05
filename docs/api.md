@@ -23,18 +23,20 @@ GET /api/weather.php?lat={lat}&lon={lon}
 {
   "meta": {
     "fetchedAt": "2026-06-05T06:24:23+00:00",
-    "locationMethod": "nearest_station",
+    "locationMethod": "nlsc_reverse_geocode",
     "datasets": {
       "observation": "O-A0003-001",
-      "forecast": "F-D0047-061"
+      "forecast": "F-D0047-069"
     },
-    "stationDistanceKm": 0.58
+    "stationDistanceKm": 1.42,
+    "observationStationName": "臺北",
+    "observationStationId": "466920"
   },
   "location": {
-    "lat": 25.04,
-    "lon": 121.52,
-    "county": "臺北市",
-    "town": "中正區"
+    "lat": 25.008,
+    "lon": 121.515,
+    "county": "新北市",
+    "town": "永和區"
   },
   "current": {
     "stationName": "臺北",
@@ -65,7 +67,7 @@ GET /api/weather.php?lat={lat}&lon={lon}
     }
   ],
   "forecast": {
-    "locationName": "中正區",
+    "locationName": "永和區",
     "days": [
       {
         "date": "2026-06-05",
@@ -85,7 +87,11 @@ GET /api/weather.php?lat={lat}&lon={lon}
 }
 ```
 
-`stations` 會包含可用座標的所有 O-A0003-001 測站摘要，供地圖輔助區塊顯示全台測站點位；Dashboard 的位置與預報仍以 `current` 最近測站與 `location` 為準。
+`location` 由 NLSC 行政區反查決定（`locationMethod: nlsc_reverse_geocode`）；若 NLSC 失敗則 fallback 為最近測站行政區（`nearest_station_fallback`）。`current` 的觀測數值一律來自最近測站，並以 `meta.observationStationName` / `meta.observationStationId` 標示來源。
+
+`stations` 會包含可用座標的所有 O-A0003-001 測站摘要，供地圖輔助區塊顯示全台測站點位。
+
+後端以 Redis 快取 CWA 資料集與 NLSC 反查結果（3 小時）；Redis 不可用時會直接打上游 API。
 
 `forecast.days[].periods` 會包含各 3 小時區間的 `startTime`、`endTime`、`wx`、`temperature`、`pop`。
 
