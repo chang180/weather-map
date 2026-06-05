@@ -8,6 +8,16 @@ CWA_API_KEY=your-cwa-api-key-here
 
 可參考 `.env.example` 建立本機設定檔。
 
+## Redis（外部伺服器）
+
+Redis 由外部伺服器提供，請在 `.env` 設定連線參數（可參考 `.env.example`）：
+
+```env
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password
+```
+
 ## TypeScript
 
 前端原始碼使用 TypeScript。`src/` 內入口與 API 模組使用 `.ts`，Vue SFC 使用 `<script setup lang="ts">`。
