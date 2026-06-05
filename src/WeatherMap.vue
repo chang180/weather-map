@@ -17,7 +17,7 @@ import { getWeatherData } from "./api";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.fullscreen';
-import 'leaflet.fullscreen/Control.FullScreen.css';
+import 'leaflet.fullscreen/dist/Control.FullScreen.css';
 
 const baseUrl = import.meta.env.BASE_URL;
 

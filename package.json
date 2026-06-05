@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite --host",
     "build": "vite build && npm run sync-public",
@@ -10,19 +13,21 @@
     "build:pages": "VITE_BASE_PATH=/weather-map/ vite build",
     "preview": "vite preview",
     "preview:pages": "npm run build:pages && vite preview --base /weather-map/",
-    "deploy": "npm run build:pages && gh-pages -d dist"
+    "deploy": "npm run build:pages && gh-pages -d dist",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "axios": "^1.16.1",
-    "leaflet.fullscreen": "^3.0.2",
-    "vue": "^3.5.35",
-    "vue-leaflet": "^0.1.0"
+    "axios": "^1.17.0",
+    "leaflet": "^1.9.4",
+    "leaflet.fullscreen": "^5.3.1",
+    "vue": "^3.5.35"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.0",
-    "@vue-leaflet/vue-leaflet": "^0.10.1",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/tsconfig": "^0.9.1",
     "gh-pages": "^6.3.0",
-    "leaflet": "^1.9.4",
-    "vite": "^6.0.0"
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vue-tsc": "^3.3.3"
   }
 }
