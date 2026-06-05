@@ -1,9 +1,11 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  return {
   plugins: [vue()],
-  base: process.env.VITE_BASE_PATH || '/',
+  base: env.VITE_BASE_PATH || '/',
   build: {
     outDir: 'dist',
     manifest: true,
@@ -19,4 +21,5 @@ export default defineConfig({
     },
   },
   publicDir: 'public',
+  };
 });

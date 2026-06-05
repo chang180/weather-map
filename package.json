@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev": "vite --host",
-    "build": "tmp=$(mktemp -d); if [ -d public/api ]; then mv public/api \"$tmp/api\"; fi; vite build; status=$?; if [ -d \"$tmp/api\" ]; then mv \"$tmp/api\" public/api; fi; rm -rf \"$tmp\"; rm -rf dist/api; if [ $status -ne 0 ]; then exit $status; fi; npm run sync-public",
-    "sync-public": "cp dist/index.html public/ && rm -rf public/assets && cp -r dist/assets public/",
+    "build": "git checkout index.html; tmp=$(mktemp -d); if [ -d public/api ]; then mv public/api \"$tmp/api\"; fi; rm -rf public/assets; vite build; status=$?; if [ -d \"$tmp/api\" ]; then mv \"$tmp/api\" public/api; fi; rm -rf \"$tmp\"; rm -rf dist/api; if [ $status -ne 0 ]; then exit $status; fi; npm run sync-public",
+    "sync-public": "cp dist/index.html public/ && rm -rf public/assets && cp -r dist/assets public/ && cp public/index.html index.html && rm -rf assets && cp -r public/assets .",
     "sync-api": "rm -rf public/api && mkdir -p public/api && rsync -a --exclude cache api/ public/api/",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit"
@@ -27,7 +27,7 @@
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/tsconfig": "^0.9.1",
     "typescript": "^6.0.3",
-    "vite": "^8.0.16",
+    "vite": "^5.4.21",
     "vue-tsc": "^3.3.3"
   }
 }
