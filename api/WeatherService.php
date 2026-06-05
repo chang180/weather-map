@@ -293,6 +293,13 @@ class WeatherService
             return null;
         }
 
-        return (float) $value;
+        $numeric = (float) $value;
+
+        // CWA 以負值（通常為 -99）表示該測站未提供此要素。
+        if ($numeric < 0) {
+            return null;
+        }
+
+        return $numeric;
     }
 }

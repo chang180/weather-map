@@ -23,11 +23,22 @@ const formatValue = (value: number | null, unit = ''): string => {
   return `${value}${unit}`;
 };
 
+const formatWindDirection = (value: number | null): string => {
+  if (value === null) {
+    return '無資料';
+  }
+
+  const directions = ['北', '東北', '東', '東南', '南', '西南', '西', '西北'];
+  const index = Math.round(value / 45) % 8;
+
+  return `${directions[index]}（${Math.round(value)}°）`;
+};
+
 const metrics = computed(() => [
   { label: '濕度', value: formatValue(props.current.humidity, '%') },
   { label: '氣壓', value: formatValue(props.current.pressure, ' hPa') },
   { label: '風速', value: formatValue(props.current.windSpeed, ' m/s') },
-  { label: '風向', value: formatValue(props.current.windDirection, '°') },
+  { label: '風向', value: formatWindDirection(props.current.windDirection) },
   { label: '10 分鐘雨量', value: formatValue(props.current.rainfall10min, ' mm') },
   { label: 'UV', value: formatValue(props.current.uvIndex) },
 ]);
