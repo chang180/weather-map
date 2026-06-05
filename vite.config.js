@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/weather-map/',
+  base: process.env.VITE_BASE_PATH || '/',
   build: {
     outDir: 'dist',
     manifest: true,

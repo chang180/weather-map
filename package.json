@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
-    "postbuild": "cp dist/index.html index.html && rm -rf assets && cp -r dist/assets assets",
+    "build": "vite build && npm run sync-public",
+    "sync-public": "cp dist/index.html public/ && rm -rf public/assets && cp -r dist/assets public/",
+    "build:pages": "VITE_BASE_PATH=/weather-map/ vite build",
     "preview": "vite preview",
-    "deploy": "gh-pages -d dist"
+    "preview:pages": "npm run build:pages && vite preview --base /weather-map/",
+    "deploy": "npm run build:pages && gh-pages -d dist"
   },
   "dependencies": {
     "axios": "^1.16.1",

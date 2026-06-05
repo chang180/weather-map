@@ -1,5 +1,12 @@
 <template>
   <div id="map-container">
+    <div v-if="locationNotice" class="location-notice">
+      {{ locationNotice }}
+      <button type="button" class="locate-link" @click="requestLocation">重新定位</button>
+    </div>
+    <button type="button" class="locate-btn" @click="requestLocation" title="定位到我的位置">
+      📍
+    </button>
     <div id="map"></div>
   </div>
 </template>
@@ -12,18 +19,35 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.fullscreen';
 import 'leaflet.fullscreen/Control.FullScreen.css';
 
-// 设置默认图标路径
+const baseUrl = import.meta.env.BASE_URL;
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: '/weather-map/images/marker-icon-2x.png',
-  iconUrl: '/weather-map/images/marker-icon.png',
-  shadowUrl: '/weather-map/images/marker-shadow.png',
+  iconRetinaUrl: `${baseUrl}images/marker-icon-2x.png`,
+  iconUrl: `${baseUrl}images/marker-icon.png`,
+  shadowUrl: `${baseUrl}images/marker-shadow.png`,
 });
+
+const DEFAULT_LAT = 23.6978;
+const DEFAULT_LON = 120.9605;
 
 const weatherData = ref([]);
 const map = ref(null);
+const locationNotice = ref("");
+const markersLayer = ref(null);
+
+const geoOptions = {
+  enableHighAccuracy: true,
+  timeout: 10000,
+  maximumAge: 0,
+};
 
 const initMap = (lat, lon) => {
+  if (map.value) {
+    map.value.setView([lat, lon], 12);
+    return;
+  }
+
   map.value = L.map("map", {
     fullscreenControl: true,
     fullscreenControlOptions: {
@@ -36,10 +60,12 @@ const initMap = (lat, lon) => {
     attribution: false, // 移除底部的標題
   }).addTo(map.value);
 
+  markersLayer.value = L.layerGroup().addTo(map.value);
+
   weatherData.value.forEach((station) => {
-    const lat = station.GeoInfo.Coordinates[1].StationLatitude;
-    const lon = station.GeoInfo.Coordinates[1].StationLongitude;
-    const marker = L.marker([lat, lon]).addTo(map.value);
+    const stationLat = station.GeoInfo.Coordinates[1].StationLatitude;
+    const stationLon = station.GeoInfo.Coordinates[1].StationLongitude;
+    const marker = L.marker([stationLat, stationLon]).addTo(markersLayer.value);
     marker.bindPopup(`
         <h3>${station.StationName}</h3>
         <p>Temperature: ${station.WeatherElement.AirTemperature} °C</p>
@@ -71,31 +97,62 @@ const fetchWeatherData = async (lat, lon) => {
     initMap(lat, lon);
   } catch (err) {
     console.error("Failed to fetch weather data", err);
+    locationNotice.value =
+      "無法載入氣象資料。此網站依賴外部 API（chang180backend.com），請確認 API 可連線後重新整理。";
   }
 };
 
-const getCurrentLocation = () => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        fetchWeatherData(lat, lon);
-      },
-      () => {
-        console.error("Geolocation permission denied or unavailable");
-        // 使用默認位置
-        fetchWeatherData(23.6978, 120.9605); // 台灣的地理中心
-      }
-    );
-  } else {
-    console.error("Geolocation is not supported by this browser");
-    // 使用默認位置
-    fetchWeatherData(23.6978, 120.9605); // 台灣的地理中心
+const getLocationErrorMessage = (error) => {
+  if (!error) {
+    return "無法取得您的位置，已改以台灣中心顯示。";
+  }
+
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      return "定位權限被拒絕，已改以台灣中心顯示。請在瀏覽器設定中允許此網站使用位置資訊。";
+    case error.POSITION_UNAVAILABLE:
+      return "目前無法取得位置，已改以台灣中心顯示。";
+    case error.TIMEOUT:
+      return "定位逾時，已改以台灣中心顯示。";
+    default:
+      return "無法取得您的位置，已改以台灣中心顯示。";
   }
 };
 
-onMounted(getCurrentLocation);
+const useFallbackLocation = (error) => {
+  locationNotice.value = getLocationErrorMessage(error);
+  fetchWeatherData(DEFAULT_LAT, DEFAULT_LON);
+};
+
+const requestLocation = () => {
+  locationNotice.value = "";
+
+  if (!window.isSecureContext) {
+    locationNotice.value =
+      "此頁面未使用 HTTPS，瀏覽器無法詢問定位權限。請改用 HTTPS 網址開啟。";
+    fetchWeatherData(DEFAULT_LAT, DEFAULT_LON);
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    useFallbackLocation();
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      locationNotice.value = "";
+      fetchWeatherData(position.coords.latitude, position.coords.longitude);
+    },
+    (error) => {
+      console.error("Geolocation failed", error);
+      useFallbackLocation(error);
+    },
+    geoOptions
+  );
+};
+
+onMounted(requestLocation);
 </script>
 
 <style scoped>
@@ -113,5 +170,48 @@ onMounted(getCurrentLocation);
 #map {
   width: 100%;
   height: 100%;
+}
+
+.location-notice {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: 90%;
+  padding: 8px 12px;
+  background: rgba(255, 243, 205, 0.95);
+  border: 1px solid #f0c36d;
+  border-radius: 6px;
+  color: #664d03;
+  font-size: 14px;
+}
+
+.locate-link,
+.locate-btn {
+  cursor: pointer;
+}
+
+.locate-link {
+  margin-left: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #0d6efd;
+  text-decoration: underline;
+}
+
+.locate-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 18px;
+  line-height: 1;
 }
 </style>
