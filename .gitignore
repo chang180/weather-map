@@ -38,3 +38,4 @@ default.php
 *.njsproj
 *.sln
 *.sw?
+.env.before_lerd

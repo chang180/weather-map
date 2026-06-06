@@ -1,0 +1,15 @@
+domains:
+  - weather-map
+php_version: "8.5"
+node_version: "22"
+public_dir: public
+secured: true
+framework: weather-map
+framework_def:
+  name: weather-map
+  label: Weather Map
+  public_dir: public
+  detect:
+    - file: api/weather.php
+  env:
+    file: .env

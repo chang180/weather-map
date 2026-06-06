@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const apiProxyTarget = env.DEV_API_PROXY_TARGET || 'https://weather-map.test';
+
   return {
   plugins: [vue()],
   base: env.VITE_BASE_PATH || '/',
@@ -14,7 +16,7 @@ export default defineConfig(({ mode }) => {
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://weather-map.test',
+        target: apiProxyTarget,
         changeOrigin: true,
         secure: false,
       },

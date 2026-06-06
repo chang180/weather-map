@@ -4,14 +4,14 @@ Weather Map 採「前端靜態檔 + 原生 PHP API」同站部署到共享空間
 
 ## 本機與正式環境的目錄差異
 
-| 用途 | 本機 Herd | 正式共享空間 |
+| 用途 | 本機 Herd / Lerd | 正式共享空間 |
 | --- | --- | --- |
-| 站台根目錄 | 專案內的 `public/`（Herd `BasicWithPublicValetDriver`） | 主機實際站台根目錄（如 `public_html/`） |
+| 站台根目錄 | 專案內的 `public/` | 主機實際站台根目錄（如 `public_html/`） |
 | PHP API 來源 | `api/` 原始碼，經 `npm run sync-api` **複製**到 `public/api/` | 直接上傳根目錄 `api/` 到站台根目錄下的 `api/` |
 | 前端靜態檔 | `npm run build` 產出後放在 `public/` | 上傳 `public/` 內容到站台根目錄 |
 | `public/api/` | 僅本機同步產物，已列入 `.gitignore` | **不使用**；正式環境 API 路徑為站台根目錄的 `/api/`，不是 `public/api/` |
 
-> **給 AI / 自動化部署的提醒**：`npm run sync-api` 與 `public/api/` 只服務本機 Herd。正式環境請上傳根目錄 `api/`，不要依賴 `public/api/` 或在本機執行 `sync-api` 後再部署。
+> **給 AI / 自動化部署的提醒**：`npm run sync-api` 與 `public/api/` 只服務本機開發（Herd / Lerd）。正式環境請上傳根目錄 `api/`，不要依賴 `public/api/` 或在本機執行 `sync-api` 後再部署。
 
 ## API 部署（正式環境）
 
@@ -53,9 +53,9 @@ npm run build
 - API 目錄：站台根目錄下的 `api/`（來自專案根目錄 `api/` 原始碼），需可由 `/api/weather.php` 存取
 - 外部 Redis：可由 PHP `redis` 擴充連線，用於 CWA / NLSC 快取
 
-## 本機 Herd（僅開發用）
+## 本機開發（Herd / Lerd）
 
-Herd 會從專案內的 `public/` 提供本機站台 `weather-map.test`。首次 clone 後請先執行：
+Herd（macOS / Windows）或 Lerd（Linux）會從專案內的 `public/` 提供本機站台 `weather-map.test`。Linux 首次設定請見 [開發環境文件](development.md#linuxlerd)。首次 clone 後請先執行：
 
 ```bash
 npm run build
