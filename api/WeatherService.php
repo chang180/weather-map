@@ -160,8 +160,10 @@ class WeatherService
         $tomorrowPop = $this->maxPopForDate($forecast['days'], $tomorrow);
         $weatherText = isset($current['weatherText']) ? $current['weatherText'] : '';
         $rainfall = isset($current['rainfall10min']) ? (float) $current['rainfall10min'] : 0;
+        // CWA 10 分鐘雨量最小刻度為 0.5 mm，晴天測站亦常出現此讀數，僅 >= 1.0 視為有效降雨。
+        $activeRainfall = $rainfall >= 1.0;
 
-        $urgent = $rainfall > 0 || preg_match('/雨|雷/u', $weatherText) || ($firstPop !== null && $firstPop >= 50);
+        $urgent = $activeRainfall || preg_match('/雨|雷/u', $weatherText) || ($firstPop !== null && $firstPop >= 50);
         $suggest = $urgent || ($todayPop !== null && $todayPop >= 40) || ($tomorrowPop !== null && $tomorrowPop >= 50);
 
         if ($urgent) {
