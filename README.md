@@ -34,7 +34,9 @@ http://localhost:3000
 
 ```bash
 npm run typecheck
-npm run build
+GOMAXPROCS=1 RAYON_NUM_THREADS=1 npm run build
 ```
+
+> 共享空間執行緒限制：Vite 8（Rolldown）需加 `GOMAXPROCS=1 RAYON_NUM_THREADS=1` 才能建置成功。詳見 [部署文件](docs/deployment.md)。
 
 本機 PHP API 修改後，執行 `npm run sync-api` 同步到 `public/api/`。API 合約請見 [docs/api.md](docs/api.md)，部署步驟請見 [docs/deployment.md](docs/deployment.md)。
